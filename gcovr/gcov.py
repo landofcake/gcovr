@@ -80,10 +80,17 @@ def is_non_code(code):
     return len(code) == 0 or code.startswith("//") or code == 'else'
 
 
+def sanitise_windows_drive_name(path):
+    if path is None:
+        return
+    return re.sub(r"^[a-zA-C](?=[~:])", lambda m: m.group(0).lower(), path)
+
+
 #
 # Process a single gcov datafile
 #
 def process_gcov_data(data_fname, covdata, source_fname, options, currdir=None):
+    source_fname = sanitise_windows_drive_name(source_fname)
     logger = Logger(options.verbose)
     INPUT = io.open(data_fname, "r", encoding=options.source_encoding,
                     errors='replace')
@@ -131,12 +138,18 @@ def guess_source_file_name(
     gcovname = segments[-1].strip()
     if currdir is None:
         currdir = os.getcwd()
+
+    currdir = sanitise_windows_drive_name(currdir)
+    root_dir = sanitise_windows_drive_name(root_dir)
+
     if source_fname is None:
         fname = guess_source_file_name_via_aliases(
             gcovname, currdir, data_fname)
     else:
         fname = guess_source_file_name_heuristics(
             gcovname, currdir, root_dir, starting_dir, source_fname)
+
+    fname = sanitise_windows_drive_name(fname)
 
     logger.verbose_msg(
         "Finding source file corresponding to a gcov data file\n"
